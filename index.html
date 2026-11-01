@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5ef">
+  <title>Welcome to Zakat Calculator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+    :root { --ink:#132f28; --muted:#687770; --paper:#f3f5ef; --card:#ffffffb8; --line:#dce4dc; --green:#174c3b; --lime:#d8f17e; --gold:#bf9140; }
+    * { box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 11% 12%,#d9efc9b8 0,transparent 30%),radial-gradient(ellipse at 89% 22%,#c5e7e0a6 0,transparent 29%),radial-gradient(ellipse at 70% 77%,#e5ead2a1 0,transparent 33%),var(--paper); color:var(--ink); font:16px/1.65 'DM Sans',sans-serif }
+    .wrap { width:min(1120px, calc(100% - 48px)); margin:auto }
+    header { padding:24px 0; display:flex; align-items:center; justify-content:space-between }
+    .brand { font:800 15px 'Manrope',sans-serif;letter-spacing:-.02em;display:flex;align-items:center;gap:10px }
+    .mark { width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--green);color:white;font-size:20px;box-shadow:0 6px 16px #174c3b2b }
+    .tag { color:var(--muted);font-size:13px }
+    main { padding:54px 0 82px }
+    .hero { display:grid;grid-template-columns:1.06fr .94fr;gap:60px;align-items:center }
+    .eyebrow { color:#4a765d;text-transform:uppercase;letter-spacing:.16em;font-weight:700;font-size:11px }
+    h1,h2,h3,.hero-card strong { font-family:'Manrope',sans-serif }
+    h1 { font-size:clamp(42px,6vw,70px);line-height:1.02;letter-spacing:-.065em;margin:17px 0 22px;max-width:670px;font-weight:700 }
+    .intro { font-size:17px;color:#53645c;max-width:620px;margin:0 }
+    .hero-actions { display:flex;align-items:center;gap:16px;margin-top:28px }
+    .button { display:inline-flex;align-items:center;gap:16px;padding:13px 18px 13px 22px;border-radius:999px;background:var(--green);color:#fff;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 8px 18px #174c3b25;transition:transform .2s,box-shadow .2s,background .2s }
+    .button span { width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:var(--lime);color:var(--green);font-size:17px;transition:transform .2s }
+    .button:hover { background:#0e3e30;box-shadow:0 12px 24px #174c3b35;transform:translateY(-2px) }
+    .button:hover span { transform:translateX(3px) }
+    .button:focus-visible { outline:3px solid #90b765;outline-offset:4px }
+    .hero-card { background:linear-gradient(140deg,#ffffffb8,#ffffff65);border:1px solid #ffffffd9;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 24px 70px #244e3914,inset 0 1px #ffffff;border-radius:28px;padding:32px;color:var(--ink);position:relative;overflow:hidden;min-height:318px;display:flex;flex-direction:column;justify-content:space-between }
+    .hero-card:before { content:"";position:absolute;width:290px;height:290px;border:1px solid #638c6935;border-radius:50%;right:-70px;top:-104px;box-shadow:0 0 0 24px #638c6910,0 0 0 52px #638c6909 }
+    .hero-card:after { content:"✳";position:absolute;right:33px;top:26px;color:#518066;font-size:20px }
+    .hero-card small { color:#557461;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-size:11px }
+    .hero-card strong { display:block;font-size:clamp(34px,4vw,48px);line-height:1.07;max-width:310px;letter-spacing:-.06em;position:relative;z-index:1 }
+    .hero-card p { color:#617268;margin:12px 0 0;max-width:320px;position:relative;z-index:1;font-size:14px }
+    .section-head { margin:78px 0 24px;display:flex;justify-content:space-between;align-items:end;gap:20px }
+    h2 { font-size:30px;letter-spacing:-.055em;line-height:1.16;margin:0;font-weight:700 }
+    .section-head p { margin:0;color:var(--muted);max-width:420px;font-size:14px }
+    .thresholds { display:grid;grid-template-columns:1fr 1fr;gap:18px }
+    .threshold { background:#ffffffa8;border:1px solid #ffffffd6;box-shadow:0 12px 34px #244e3909,inset 0 1px #fff;border-radius:20px;padding:25px;display:flex;gap:18px;align-items:flex-start;backdrop-filter:blur(10px) }
+    .icon { flex:none;width:46px;height:46px;border-radius:15px;background:#f3ead7;color:#90651c;display:grid;place-items:center;font-size:22px }
+    .threshold.silver .icon { background:#e7eee8;color:#50675b }
+    .threshold h3 { margin:0 0 3px;font-size:17px }
+    .amount { font:800 32px/1.25 'Manrope',sans-serif;letter-spacing:-.055em }
+    .threshold p { color:var(--muted);margin:5px 0 0;font-size:13px }
+    .currency { margin-top:58px;padding:32px;border-radius:26px;background:#ffffff9c;border:1px solid #ffffffd9;box-shadow:0 18px 48px #244e390c,inset 0 1px #fff;backdrop-filter:blur(14px) }
+    .currency-top { display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:22px }
+    .currency-top p { color:var(--muted);font-size:14px;margin:8px 0 0 }
+    .converter { display:grid;grid-template-columns:minmax(120px,1fr) minmax(100px,1.2fr) auto minmax(100px,1.2fr);gap:12px;align-items:end }
+    .converter-field label { display:block;font-size:12px;font-weight:700;margin-bottom:6px }
+    .converter input,.converter select { width:100%;min-height:48px;border:1px solid #d7e0d7;background:#ffffffde;border-radius:12px;padding:11px 13px;font:inherit;color:var(--ink) }
+    .swap { width:44px;height:44px;border:1px solid #d7e0d7;border-radius:50%;background:#edf3e9;color:var(--green);font-size:20px;cursor:pointer;transition:transform .2s,background .2s }
+    .swap:hover { transform:rotate(180deg);background:#dcebd2 }
+    .converted { margin-top:16px;padding:18px 20px;border-radius:16px;background:var(--green);color:white;display:flex;justify-content:space-between;align-items:center;gap:12px }
+    .converted small { color:#d3e1d7;font-size:12px }
+    .converted output { font:700 clamp(22px,4vw,32px)/1.2 'Manrope',sans-serif;letter-spacing:-.04em;text-align:right }
+    .rate-meta { margin:12px 0 0;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px }
+    .rate-meta a { color:#456e59;text-underline-offset:3px }
+    .checker { scroll-margin-top:28px;margin-top:58px;background:linear-gradient(130deg,#e3edd9e8,#e6f0e9d9);border:1px solid #ffffffd9;box-shadow:0 18px 48px #244e3910,inset 0 1px #fff;border-radius:26px;padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center }
+    .checker p { color:#59675e;margin:10px 0 0 }
+    .inputs { display:grid;grid-template-columns:1fr 1fr;gap:12px }
+    label { display:block;font-size:12px;font-weight:700;margin-bottom:6px }
+    input { width:100%;border:1px solid #d4dbce;background:#ffffffd9;border-radius:12px;padding:12px 13px;font:inherit;color:var(--ink) }
+    input:focus { outline:3px solid #b9d38e }
+    .result { grid-column:1/-1;background:#ffffffd9;border:1px solid #fff;border-radius:13px;padding:13px 15px;font-weight:600;font-size:14px;min-height:50px }
+    .note { border-left:2px solid var(--gold);padding:4px 0 4px 16px;color:var(--muted);font-size:13px;margin:24px 0 0 }
+    footer { border-top:1px solid #dce4dcaa;padding:20px 0 30px;color:var(--muted);font-size:12px }
+    @media(max-width:760px) { .hero,.checker { grid-template-columns:1fr }.hero { gap:30px }.hero-card { min-height:250px }.section-head { display:block }.section-head p { margin-top:10px }.thresholds { grid-template-columns:1fr } }
+    @media(max-width:760px) { .converter { grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr) }.converter-field:first-child { grid-column:1/-1 }.swap { grid-column:2;justify-self:center;transform:rotate(90deg);margin:0 }.swap:hover { transform:rotate(270deg) } }
+    @media(max-width:460px) { .currency { padding:22px }.currency-top { display:block }.converted { align-items:flex-start;flex-direction:column }.converted output { text-align:left }.rate-meta { flex-direction:column;gap:4px }.wrap { width:min(100% - 30px,1120px) } main { padding-top:34px }.tag { font-size:11px }.checker { padding:22px }.inputs { grid-template-columns:1fr }.hero-actions { margin-top:22px } }
+    @media(prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{transition:none!important} }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="brand"><span class="mark" aria-hidden="true">☾</span> Zakat Guide</div>
+    <span class="tag">A simple starting point</span>
+  </header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <div class="eyebrow">Understand your giving</div>
+        <h1 id="page-title">Welcome to Zakat Calculator</h1>
+        <p class="intro">Zakat is an obligatory form of charity and one of the Five Pillars of Islam. It helps purify a Muslim’s wealth and supports people in need. In general, zakat becomes due when your zakatable wealth reaches the <em>nisab</em> (minimum threshold) and you have held that wealth for one lunar year. A common rate is 2.5% of eligible wealth.</p>
+        <div class="hero-actions"><a class="button" href="zakat-calculator.html">Get Started <span aria-hidden="true">↗</span></a></div>
+      </div>
+      <aside class="hero-card" aria-label="Zakat overview">
+        <small>Give with understanding</small>
+        <div><strong>Wealth shared with purpose.</strong><p>Learn the nisab benchmarks, then check with a trusted scholar for your circumstances.</p></div>
+      </aside>
+    </section>
+
+    <section aria-labelledby="threshold-heading">
+      <div class="section-head">
+        <h2 id="threshold-heading">When does gold or silver reach nisab?</h2>
+        <p>Nisab is the minimum amount of wealth that makes zakat potentially due.</p>
+      </div>
+      <div class="thresholds">
+        <article class="threshold">
+          <div class="icon" aria-hidden="true">✦</div>
+          <div><h3>Gold</h3><div class="amount">87.48 g</div><p>Commonly used threshold: 7.5 tola of gold, or its cash value.</p></div>
+        </article>
+        <article class="threshold silver">
+          <div class="icon" aria-hidden="true">◈</div>
+          <div><h3>Silver</h3><div class="amount">612.36 g</div><p>Commonly used threshold: 52.5 tola of silver, or its cash value.</p></div>
+        </article>
+      </div>
+      <p class="note">Scholarly methods differ: some use 85 g of gold and 595 g of silver. Jewelry rulings and whether to use the gold or silver value can also vary. These weights are reference points; other zakatable assets such as cash may count toward the nisab.</p>
+    </section>
+
+    <section class="currency" aria-labelledby="currency-title">
+      <div class="currency-top"><div><div class="eyebrow">Live exchange rates</div><h2 id="currency-title">Convert currencies</h2><p>Convert between USD, EUR, SEK, PKR and GBP using the latest available reference rates.</p></div></div>
+      <div class="converter">
+        <div class="converter-field"><label for="currency-amount">Amount</label><input id="currency-amount" type="number" min="0" step="any" value="1" inputmode="decimal"></div>
+        <div class="converter-field"><label for="currency-from">From</label><select id="currency-from"></select></div>
+        <button class="swap" id="swap-currencies" type="button" aria-label="Swap currencies">↔</button>
+        <div class="converter-field"><label for="currency-to">To</label><select id="currency-to"></select></div>
+      </div>
+      <div class="converted"><small id="conversion-label">1 USD equals</small><output id="conversion-result" aria-live="polite">Loading rates…</output></div>
+      <div class="rate-meta"><span id="rate-status" role="status">Fetching the latest available rates…</span><a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Rates By Exchange Rate API</a></div>
+    </section>
+
+    <section class="checker" aria-labelledby="checker-title">
+      <div><div class="eyebrow">Quick reference</div><h2 id="checker-title">Check a metal amount</h2><p>Enter the weight you own to compare it with the commonly used threshold. This check alone does not determine your full zakat obligation.</p></div>
+      <div class="inputs">
+        <div><label for="gold">Gold (grams)</label><input id="gold" type="number" min="0" step="0.01" placeholder="e.g. 90" inputmode="decimal"></div>
+        <div><label for="silver">Silver (grams)</label><input id="silver" type="number" min="0" step="0.01" placeholder="e.g. 620" inputmode="decimal"></div>
+        <div class="result" id="result" role="status" aria-live="polite">Enter a weight above to compare it with nisab.</div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap">For learning purposes only. Zakat rules can differ by school of thought and personal circumstances; consult a knowledgeable scholar or trusted zakat authority.</div></footer>
+  <script>
+    const goldInput = document.querySelector('#gold');
+    const silverInput = document.querySelector('#silver');
+    const result = document.querySelector('#result');
+    function updateCheck() {
+      const gold = Number(goldInput.value) || 0;
+      const silver = Number(silverInput.value) || 0;
+      const reached = [];
+      if (gold >= 87.48) reached.push('gold');
+      if (silver >= 612.36) reached.push('silver');
+      if (!goldInput.value && !silverInput.value) {
+        result.textContent = 'Enter a weight above to compare it with nisab.';
+      } else if (reached.length) {
+        result.textContent = `Your entered ${reached.join(' and ')} amount${reached.length > 1 ? 's' : ''} reach${reached.length > 1 ? '' : 'es'} the commonly used threshold.`;
+      } else {
+        result.textContent = 'The entered metal amounts are below these individual thresholds. Other assets may count toward nisab.';
+      }
+    }
+
+    const currencyNames = { USD: 'US Dollar', EUR: 'Euro', SEK: 'Swedish Krona', PKR: 'Pakistani Rupee', GBP: 'British Pound' };
+    const amountField = document.querySelector('#currency-amount');
+    const fromField = document.querySelector('#currency-from');
+    const toField = document.querySelector('#currency-to');
+    const conversionLabel = document.querySelector('#conversion-label');
+    const conversionResult = document.querySelector('#conversion-result');
+    const rateStatus = document.querySelector('#rate-status');
+    let usdRates = null;
+    for (const [code, name] of Object.entries(currencyNames)) {
+      fromField.add(new Option(`${code} · ${name}`, code));
+      toField.add(new Option(`${code} · ${name}`, code));
+    }
+    toField.value = 'PKR';
+    const formatCurrency = (value, code) => new Intl.NumberFormat(undefined, { style: 'currency', currency: code, maximumFractionDigits: 2 }).format(value);
+    function convertCurrency() {
+      if (!usdRates) return;
+      const amount = Number(amountField.value);
+      const from = fromField.value;
+      const to = toField.value;
+      conversionLabel.textContent = `${formatCurrency(Number.isFinite(amount) ? amount : 0, from)} equals`;
+      if (!Number.isFinite(amount) || amount < 0) {
+        conversionResult.textContent = 'Enter a valid amount';
+        return;
+      }
+      const converted = amount / usdRates[from] * usdRates[to];
+      conversionResult.textContent = formatCurrency(converted, to);
+    }
+    amountField.addEventListener('input', convertCurrency);
+    fromField.addEventListener('change', convertCurrency);
+    toField.addEventListener('change', convertCurrency);
+    document.querySelector('#swap-currencies').addEventListener('click', () => {
+      const previous = fromField.value;
+      fromField.value = toField.value;
+      toField.value = previous;
+      convertCurrency();
+    });
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(response => { if (!response.ok) throw new Error('Rates unavailable'); return response.json(); })
+      .then(data => {
+        if (data.result !== 'success' || !data.rates || !Object.keys(currencyNames).every(code => data.rates[code])) throw new Error('Rates unavailable');
+        usdRates = data.rates;
+        const updated = data.time_last_update_utc ? new Date(data.time_last_update_utc).toLocaleString() : 'recently';
+        rateStatus.textContent = `Rates updated ${updated}. Reference rates may differ from your bank or provider.`;
+        convertCurrency();
+      })
+      .catch(() => {
+        rateStatus.textContent = 'Live rates could not be loaded. Check your connection and refresh to try again.';
+        conversionResult.textContent = 'Rates unavailable';
+      });
+
+    goldInput.addEventListener('input', updateCheck);
+    silverInput.addEventListener('input', updateCheck);
+  </script>
+</body>
+</html>
