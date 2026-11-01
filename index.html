@@ -57,6 +57,17 @@
     .converted output { font:700 clamp(22px,4vw,32px)/1.2 'Manrope',sans-serif;letter-spacing:-.04em;text-align:right }
     .rate-meta { margin:12px 0 0;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px }
     .rate-meta a { color:#456e59;text-underline-offset:3px }
+    .tola-converter { margin-top:58px;padding:32px;border-radius:26px;background:linear-gradient(135deg,#ffffffb8,#f7faf3c9);border:1px solid #ffffffdf;box-shadow:0 18px 48px #244e390e,inset 0 1px #fff;backdrop-filter:blur(14px) }
+    .tola-intro { color:var(--muted);font-size:14px;margin:8px 0 22px }
+    .tola-cards { display:grid;grid-template-columns:1fr 1fr;gap:16px }
+    .tola-card { background:#ffffffc9;border:1px solid #e2e9df;border-radius:18px;padding:20px }
+    .tola-card h3 { font:700 17px 'Manrope',sans-serif;margin:0 0 14px;letter-spacing:-.03em }
+    .tola-card label { display:block;font-size:12px;font-weight:700;margin-bottom:6px }
+    .tola-card input { width:100%;border:1px solid #d7e0d7;background:white;border-radius:11px;padding:12px 13px;font:inherit;color:var(--ink) }
+    .tola-card input:focus { outline:3px solid #b9d38e }
+    .gram-output { margin-top:12px;background:#edf3e9;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center }
+    .gram-output span { color:var(--muted);font-size:13px }
+    .gram-output output { font:700 20px 'Manrope',sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums }
     .checker { scroll-margin-top:28px;margin-top:58px;background:linear-gradient(130deg,#e3edd9e8,#e6f0e9d9);border:1px solid #ffffffd9;box-shadow:0 18px 48px #244e3910,inset 0 1px #fff;border-radius:26px;padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center }
     .checker p { color:#59675e;margin:10px 0 0 }
     .inputs { display:grid;grid-template-columns:1fr 1fr;gap:12px }
@@ -68,7 +79,7 @@
     footer { border-top:1px solid #dce4dcaa;padding:20px 0 30px;color:var(--muted);font-size:12px }
     @media(max-width:760px) { .hero,.checker { grid-template-columns:1fr }.hero { gap:30px }.hero-card { min-height:250px }.section-head { display:block }.section-head p { margin-top:10px }.thresholds { grid-template-columns:1fr } }
     @media(max-width:760px) { .converter { grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr) }.converter-field:first-child { grid-column:1/-1 }.swap { grid-column:2;justify-self:center;transform:rotate(90deg);margin:0 }.swap:hover { transform:rotate(270deg) } }
-    @media(max-width:460px) { .currency { padding:22px }.currency-top { display:block }.converted { align-items:flex-start;flex-direction:column }.converted output { text-align:left }.rate-meta { flex-direction:column;gap:4px }.wrap { width:min(100% - 30px,1120px) } main { padding-top:34px }.tag { font-size:11px }.checker { padding:22px }.inputs { grid-template-columns:1fr }.hero-actions { margin-top:22px } }
+    @media(max-width:460px) { .tola-converter { padding:22px }.tola-cards { grid-template-columns:1fr }.currency { padding:22px }.currency-top { display:block }.converted { align-items:flex-start;flex-direction:column }.converted output { text-align:left }.rate-meta { flex-direction:column;gap:4px }.wrap { width:min(100% - 30px,1120px) } main { padding-top:34px }.tag { font-size:11px }.checker { padding:22px }.inputs { grid-template-columns:1fr }.hero-actions { margin-top:22px } }
     @media(prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{transition:none!important} }
   </style>
 </head>
@@ -121,6 +132,16 @@
       <div class="rate-meta"><span id="rate-status" role="status">Fetching the latest available rates…</span><a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Rates By Exchange Rate API</a></div>
     </section>
 
+    <section class="tola-converter" aria-labelledby="tola-title">
+      <div class="eyebrow">Pakistani weight conversion</div>
+      <h2 id="tola-title">Convert tola to grams</h2>
+      <p class="tola-intro">Enter your gold or silver weight in tola to see its gram equivalent. This converter uses 1 Pakistani-market tola = 11.6638 grams.</p>
+      <div class="tola-cards">
+        <div class="tola-card"><h3>Gold</h3><label for="gold-tola">Gold weight (tola)</label><input id="gold-tola" type="number" min="0" step="any" placeholder="e.g. 7.5" inputmode="decimal"><div class="gram-output"><span>Equivalent weight</span><output id="gold-grams" aria-live="polite">0 g</output></div></div>
+        <div class="tola-card"><h3>Silver</h3><label for="silver-tola">Silver weight (tola)</label><input id="silver-tola" type="number" min="0" step="any" placeholder="e.g. 52.5" inputmode="decimal"><div class="gram-output"><span>Equivalent weight</span><output id="silver-grams" aria-live="polite">0 g</output></div></div>
+      </div>
+    </section>
+
     <section class="checker" aria-labelledby="checker-title">
       <div><div class="eyebrow">Quick reference</div><h2 id="checker-title">Check a metal amount</h2><p>Enter the weight you own to compare it with the commonly used threshold. This check alone does not determine your full zakat obligation.</p></div>
       <div class="inputs">
@@ -149,6 +170,16 @@
         result.textContent = 'The entered metal amounts are below these individual thresholds. Other assets may count toward nisab.';
       }
     }
+
+
+    const tolaInGrams = 11.6638;
+    function updateTola(inputId, outputId) {
+      const tola = Math.max(0, Number(document.querySelector(`#${inputId}`).value) || 0);
+      const grams = tola * tolaInGrams;
+      document.querySelector(`#${outputId}`).textContent = `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(grams)} g`;
+    }
+    document.querySelector('#gold-tola').addEventListener('input', () => updateTola('gold-tola', 'gold-grams'));
+    document.querySelector('#silver-tola').addEventListener('input', () => updateTola('silver-tola', 'silver-grams'));
 
     const currencyNames = { USD: 'US Dollar', EUR: 'Euro', SEK: 'Swedish Krona', PKR: 'Pakistani Rupee', GBP: 'British Pound' };
     const amountField = document.querySelector('#currency-amount');
