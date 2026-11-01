@@ -20,7 +20,7 @@
   <main class="wrap">
     <h1>Zakat Calculator</h1>
     <p class="subhead">Enter your eligible assets and short-term liabilities to estimate your zakatable amount. Use current market values for gold and silver.</p>
-    <div class="toolbar"><label for="currency">Entry / result currency <select id="currency"><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="SEK">SEK (kr)</option><option value="PKR">PKR (Rs)</option><option value="GBP">GBP (£)</option></select></label><div class="updated" id="rate-note">Enter all amounts and market prices in the selected currency.</div></div>
+    <div class="toolbar"><label for="currency">Entry / result currency <select id="currency"><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="SEK">SEK (kr)</option><option value="PKR">PKR (Rs)</option><option value="GBP">GBP (£)</option></select></label><div class="updated" id="rate-note">Enter all amounts in the selected currency. Entries are saved in this browser until reset.</div></div>
     <div class="grid">
       <section class="panel" aria-labelledby="assets-title">
         <div class="panel-title" id="assets-title">Assets Detail</div><div class="panel-body">
@@ -73,13 +73,34 @@
       fields.forEach(field => { field.value = '0'; });
       currency.value = 'USD';
       document.querySelector('#nisab-standard').value = 'silver';
-      document.querySelector('#rate-note').textContent = 'Enter all amounts and metal prices in the selected currency.';
+      document.querySelector('#rate-note').textContent = 'Values cleared. New entries will save in this browser until reset.';
+      try { localStorage.removeItem(storageKey); } catch {}
       recalculate();
       document.querySelector('#cash').focus();
     });
     const symbols = { USD:'$', EUR:'€', SEK:'kr', PKR:'Rs', GBP:'£' };
     const nisabWeights = { gold:87.48, silver:612.36 };
     const fields = [...document.querySelectorAll('input[type="number"]')];
+    const storageKey = 'zakat-calculator-state-v1';
+    function saveState() {
+      try {
+        const values = Object.fromEntries(fields.map(field => [field.id, field.value]));
+        localStorage.setItem(storageKey, JSON.stringify({ values, currency: currency.value, nisab: document.querySelector('#nisab-standard').value }));
+      } catch {}
+    }
+    function restoreState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        if (!saved || typeof saved !== 'object') return;
+        fields.forEach(field => {
+          if (typeof saved.values?.[field.id] === 'string') field.value = saved.values[field.id];
+        });
+        if (['USD','EUR','SEK','PKR','GBP'].includes(saved.currency)) currency.value = saved.currency;
+        if (['gold','silver'].includes(saved.nisab)) document.querySelector('#nisab-standard').value = saved.nisab;
+        document.querySelector('#rate-note').textContent = 'Your calculator entries were restored and are saved in this browser until reset.';
+      } catch {}
+    }
+    restoreState();
     const number = id => Math.max(0, Number(document.getElementById(id).value) || 0);
     const money = n => new Intl.NumberFormat(undefined,{style:'currency',currency:currency.value,maximumFractionDigits:2}).format(Number.isFinite(n)?n:0);
     function recalculate(){
@@ -172,9 +193,9 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
 
-    fields.forEach(field=>field.addEventListener('input',recalculate));
-    currency.addEventListener('change',()=>{document.querySelector('#rate-note').textContent=`Enter all amounts and market prices in ${currency.value} (${symbols[currency.value]}).`;recalculate()});
-    document.querySelector('#nisab-standard').addEventListener('change',recalculate);
+    fields.forEach(field=>field.addEventListener('input',()=>{recalculate();saveState()}));
+    currency.addEventListener('change',()=>{document.querySelector('#rate-note').textContent=`All amounts use ${currency.value} (${symbols[currency.value]}) and are saved in this browser until reset.`;recalculate();saveState()});
+    document.querySelector('#nisab-standard').addEventListener('change',()=>{recalculate();saveState()});
     recalculate();
   </script>
 </body>
