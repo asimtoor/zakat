@@ -125,72 +125,121 @@
       document.querySelector('#eligibility').textContent=nisab<=0?'Enter the selected metal’s market value per gram to calculate nisab.':eligible?'Your net assets meet or exceed the selected nisab. The estimate applies 2.5% to net zakatable assets.':'Your net assets are below the selected nisab; this estimate shows no zakat due.';
     }
 
-    function createPDF(lines) {
+    function createPDF(report) {
       const clean = text => String(text).normalize('NFKD').replace(/[^\x20-\x7E]/g, '').replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-      const commands = ['BT', '/F1 18 Tf', '50 790 Td', `(${clean(lines[0])}) Tj`, '/F1 10 Tf'];
-      for (const line of lines.slice(1)) commands.push('0 -20 Td', `(${clean(line)}) Tj`);
-      commands.push('ET');
-      const stream = commands.join('\n');
-      const objects = [
+      const commands = [];
+      const text = (value, x, y, size=9, bold=false, color='0.12 0.18 0.15') => {
+        commands.push(`${color} rg BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${clean(value)}) Tj ET`);
+      };
+      const rect = (x,y,w,h,fill,stroke=null) => {
+        commands.push(`${fill} rg ${x} ${y} ${w} ${h} re f`);
+        if (stroke) commands.push(`${stroke} RG 0.7 w ${x} ${y} ${w} ${h} re S`);
+      };
+      const line = (x1,y1,x2,y2,color='0.83 0.86 0.83') => commands.push(`${color} RG 0.5 w ${x1} ${y1} m ${x2} ${y2} l S`);
+      const x=48, width=499, rowHeight=18;
+      text(report.title, x, 800, 22, true, '0.08 0.25 0.19');
+      text(`Prepared ${report.prepared}   |   Currency: ${report.currency}`, x, 780, 9, false, '0.34 0.40 0.36');
+      function drawTable(title, rows, top) {
+        const titleHeight=20, headingHeight=18;
+        rect(x,top-titleHeight,width,titleHeight,'0.09 0.29 0.22');
+        text(title.toUpperCase(),x+8,top-14,9,true,'1 1 1');
+        let y=top-titleHeight;
+        rect(x,y-headingHeight,width,headingHeight,'0.89 0.92 0.89');
+        text('Description',x+8,y-13,8,true);
+        text('Amount ('+report.currency+')',x+width-112,y-13,8,true);
+        line(x,y-headingHeight,x+width,y-headingHeight);
+        y-=headingHeight;
+        rows.forEach((row,index)=>{
+          const bottom=y-rowHeight;
+          rect(x,bottom,width,rowHeight,index%2===0?'0.985 0.99 0.98':'1 1 1');
+          text(row.label,x+8,bottom+5.5,8.5,!!row.bold);
+          const amount=String(row.amount);
+          const amountX=x+width-8-Math.min(105,amount.length*4.8);
+          text(amount,amountX,bottom+5.5,8.5,!!row.bold);
+          line(x,bottom,x+width,bottom);
+          y=bottom;
+        });
+        line(x,y,x,y+titleHeight+headingHeight+rows.length*rowHeight);
+        line(x+width,y,x+width,y+titleHeight+headingHeight+rows.length*rowHeight);
+        return y;
+      }
+      let y=drawTable('Assets',report.assets,756)-14;
+      y=drawTable('Liabilities',report.liabilities,y)-14;
+      drawTable('Zakat summary',report.summary,y);
+      const cardX=112,cardY=102,cardW=371,cardH=82;
+      rect(cardX,cardY,cardW,cardH,'1 0.96 0.70','0.09 0.29 0.22');
+      const label='CALCULATED ZAKAT';
+      text(label,cardX+(cardW-label.length*5.1)/2,cardY+54,10,true,'0.09 0.29 0.22');
+      const amount=report.due;
+      const amountWidth=amount.length*11;
+      text(amount,cardX+(cardW-amountWidth)/2,cardY+23,20,true,'0.08 0.25 0.19');
+      const disclaimer='Estimate only. Zakat rulings may vary by scholarly opinion and personal circumstances.';
+      text(disclaimer,Math.max(48,(595-disclaimer.length*4.25)/2),54,8,false,'0.38 0.42 0.39');
+      const stream=commands.join('\n');
+      const objects=[
         '<< /Type /Catalog /Pages 2 0 R >>',
         '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>',
         `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
       ];
-      let pdf = '%PDF-1.4\n';
-      const offsets = [0];
-      objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
-      const xref = pdf.length;
-      pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-      for (const offset of offsets.slice(1)) pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
-      pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-      return new Blob([pdf], { type: 'application/pdf' });
+      let pdf='%PDF-1.4\n';
+      const offsets=[0];
+      objects.forEach((object,index)=>{offsets.push(pdf.length);pdf+=`${index+1} 0 obj\n${object}\nendobj\n`;});
+      const xref=pdf.length;
+      pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+      for(const offset of offsets.slice(1)) pdf+=`${String(offset).padStart(10,'0')} 00000 n \n`;
+      pdf+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+      return new Blob([pdf],{type:'application/pdf'});
     }
     document.querySelector('#download-pdf').addEventListener('click', () => {
       recalculate();
-      const code = currency.value;
-      const standard = document.querySelector('#nisab-standard').value;
-      const assets = number('cash') + number('investments') + number('retirement') + number('business') + number('other-assets') + number('gold-grams') * number('gold-price') + number('silver-grams') * number('silver-price');
-      const debts = [...document.querySelectorAll('.debt')].reduce((sum, field) => sum + number(field.id), 0);
-      const net = Math.max(0, assets - debts);
-      const nisab = (standard === 'gold' ? number('gold-price') * nisabWeights.gold : number('silver-price') * nisabWeights.silver);
-      const due = nisab > 0 && net >= nisab ? net * 0.025 : 0;
-      const show = value => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-      const lines = [
-        'Zakat Calculator - Summary',
-        `Prepared: ${new Date().toLocaleDateString('en-US')}   Currency: ${code}`,
-        '',
-        'ASSETS',
-        `Cash and bank balances: ${code} ${show(number('cash'))}`,
-        `Stocks and investments: ${code} ${show(number('investments'))}`,
-        `Accessible retirement funds: ${code} ${show(number('retirement'))}`,
-        `Business inventory / receivables: ${code} ${show(number('business'))}`,
-        `Gold (${show(number('gold-grams'))} g): ${code} ${show(number('gold-grams') * number('gold-price'))}`,
-        `Silver (${show(number('silver-grams'))} g): ${code} ${show(number('silver-grams') * number('silver-price'))}`,
-        `Other eligible assets: ${code} ${show(number('other-assets'))}`,
-        `Total asset value: ${code} ${show(assets)}`,
-        '',
-        'LIABILITIES',
-        `Credit card balances: ${code} ${show(number('credit-cards'))}`,
-        `Personal loans due: ${code} ${show(number('personal-loans'))}`,
-        `Other due liabilities: ${code} ${show(number('business-debts'))}`,
-        `Total liabilities: ${code} ${show(debts)}`,
-        '',
-        'ZAKAT SUMMARY',
-        `Selected nisab: ${standard} (${standard === 'gold' ? '87.48' : '612.36'} g)`,
-        `Nisab value: ${nisab > 0 ? `${code} ${show(nisab)}` : 'Enter metal market price'}`,
-        `Net zakatable assets: ${code} ${show(net)}`,
-        `Estimated zakat (2.5%): ${code} ${show(due)}`,
-        '',
-        'Estimate only. Rules can vary by scholarly opinion and personal circumstances.'
+      const code=currency.value;
+      const standard=document.querySelector('#nisab-standard').value;
+      const goldValue=number('gold-grams')*number('gold-price');
+      const silverValue=number('silver-grams')*number('silver-price');
+      const assetLines=[
+        ['Cash and bank balances',number('cash')],
+        ['Stocks and investments',number('investments')],
+        ['Accessible retirement funds',number('retirement')],
+        ['Business inventory / receivables',number('business')],
+        [`Gold (${number('gold-grams')} g)`,goldValue],
+        [`Silver (${number('silver-grams')} g)`,silverValue],
+        ['Other eligible assets',number('other-assets')]
       ];
-      const url = URL.createObjectURL(createPDF(lines));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'zakat-calculator-summary.pdf';
+      const assets=assetLines.reduce((sum,row)=>sum+row[1],0);
+      const debtLines=[
+        ['Credit card balances',number('credit-cards')],
+        ['Personal loans due',number('personal-loans')],
+        ['Other due liabilities',number('business-debts')]
+      ];
+      const debts=debtLines.reduce((sum,row)=>sum+row[1],0);
+      const net=Math.max(0,assets-debts);
+      const nisab=standard==='gold'?number('gold-price')*nisabWeights.gold:number('silver-price')*nisabWeights.silver;
+      const due=nisab>0&&net>=nisab?net*.025:0;
+      const show=value=>new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(value);
+      const formatRows=rows=>rows.map(([label,value])=>({label,amount:`${code} ${show(value)}`}));
+      const year=new Date().getFullYear()-1;
+      const report={
+        title:`Zakat of ${year}`,
+        prepared:new Date().toLocaleDateString('en-US'),
+        currency:code,
+        assets:[...formatRows(assetLines),{label:'TOTAL ASSET VALUE',amount:`${code} ${show(assets)}`,bold:true}],
+        liabilities:[...formatRows(debtLines),{label:'TOTAL LIABILITIES',amount:`${code} ${show(debts)}`,bold:true}],
+        summary:[
+          {label:`Selected nisab (${standard==='gold'?'87.48':'612.36'} g ${standard})`,amount:nisab>0?`${code} ${show(nisab)}`:'Add metal price'},
+          {label:'Net zakatable assets',amount:`${code} ${show(net)}`},
+          {label:'Amount above nisab',amount:nisab>0?`${code} ${show(Math.max(0,net-nisab))}`:'—'}
+        ],
+        due:`${code} ${show(due)}`
+      };
+      const url=URL.createObjectURL(createPDF(report));
+      const link=document.createElement('a');
+      link.href=url;
+      link.download=`zakat-of-${year}.pdf`;
       link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
 
     fields.forEach(field=>field.addEventListener('input',()=>{recalculate();saveState()}));
