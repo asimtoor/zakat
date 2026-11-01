@@ -59,6 +59,15 @@
     .rate-meta a { color:#456e59;text-underline-offset:3px }
     .tola-converter { margin-top:58px;padding:32px;border-radius:26px;background:linear-gradient(135deg,#ffffffb8,#f7faf3c9);border:1px solid #ffffffdf;box-shadow:0 18px 48px #244e390e,inset 0 1px #fff;backdrop-filter:blur(14px) }
     .tola-intro { color:var(--muted);font-size:14px;margin:8px 0 22px }
+    .metal-prices { margin-top:20px;padding-top:19px;border-top:1px solid #dfe6dd }
+    .metal-prices-head { display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:12px }
+    .metal-prices-head strong { font:700 15px 'Manrope',sans-serif }
+    .metal-prices-head select { border:1px solid #d7e0d7;background:#fff;border-radius:9px;padding:8px 10px;color:var(--ink);font:600 13px 'DM Sans',sans-serif }
+    .metal-price-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px }
+    .metal-price { padding:14px 16px;background:#edf3e9;border-radius:13px;display:flex;justify-content:space-between;gap:10px;align-items:center }
+    .metal-price span { color:var(--muted);font-size:13px }
+    .metal-price output { font:700 18px 'Manrope',sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:right }
+    .metal-price-status { margin:10px 0 0;color:var(--muted);font-size:12px }.metal-price-source { margin:5px 0 0;color:var(--muted);font-size:11px }.metal-price-source a { color:#456e59;text-underline-offset:3px }
     .tola-cards { display:grid;grid-template-columns:1fr 1fr;gap:16px }
     .tola-card { background:#ffffffc9;border:1px solid #e2e9df;border-radius:18px;padding:20px }
     .tola-card h3 { font:700 17px 'Manrope',sans-serif;margin:0 0 14px;letter-spacing:-.03em }
@@ -79,7 +88,7 @@
     footer { border-top:1px solid #dce4dcaa;padding:20px 0 30px;color:var(--muted);font-size:12px }
     @media(max-width:760px) { .hero,.checker { grid-template-columns:1fr }.hero { gap:30px }.hero-card { min-height:250px }.section-head { display:block }.section-head p { margin-top:10px }.thresholds { grid-template-columns:1fr } }
     @media(max-width:760px) { .converter { grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr) }.converter-field:first-child { grid-column:1/-1 }.swap { grid-column:2;justify-self:center;transform:rotate(90deg);margin:0 }.swap:hover { transform:rotate(270deg) } }
-    @media(max-width:460px) { .tola-converter { padding:22px }.tola-cards { grid-template-columns:1fr }.currency { padding:22px }.currency-top { display:block }.converted { align-items:flex-start;flex-direction:column }.converted output { text-align:left }.rate-meta { flex-direction:column;gap:4px }.wrap { width:min(100% - 30px,1120px) } main { padding-top:34px }.tag { font-size:11px }.checker { padding:22px }.inputs { grid-template-columns:1fr }.hero-actions { margin-top:22px } }
+    @media(max-width:460px) { .tola-converter { padding:22px }.tola-cards,.metal-price-grid { grid-template-columns:1fr }.metal-prices-head { align-items:flex-start;flex-direction:column }.currency { padding:22px }.currency-top { display:block }.converted { align-items:flex-start;flex-direction:column }.converted output { text-align:left }.rate-meta { flex-direction:column;gap:4px }.wrap { width:min(100% - 30px,1120px) } main { padding-top:34px }.tag { font-size:11px }.checker { padding:22px }.inputs { grid-template-columns:1fr }.hero-actions { margin-top:22px } }
     @media(prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{transition:none!important} }
   </style>
 </head>
@@ -140,6 +149,11 @@
         <div class="tola-card"><h3>Gold</h3><label for="gold-tola">Gold weight (tola)</label><input id="gold-tola" type="number" min="0" step="any" placeholder="e.g. 7.5" inputmode="decimal"><div class="gram-output"><span>Equivalent weight</span><output id="gold-grams" aria-live="polite">0 g</output></div></div>
         <div class="tola-card"><h3>Silver</h3><label for="silver-tola">Silver weight (tola)</label><input id="silver-tola" type="number" min="0" step="any" placeholder="e.g. 52.5" inputmode="decimal"><div class="gram-output"><span>Equivalent weight</span><output id="silver-grams" aria-live="polite">0 g</output></div></div>
       </div>
+      <div class="metal-prices" aria-label="Current precious metal prices">
+        <div class="metal-prices-head"><strong>Current spot value per gram</strong><label for="metal-price-currency"><span class="tag">Show in </span><select id="metal-price-currency"><option value="PKR">PKR · Pakistani Rupee</option><option value="USD">USD · US Dollar</option><option value="EUR">EUR · Euro</option><option value="SEK">SEK · Swedish Krona</option><option value="GBP">GBP · British Pound</option></select></label></div>
+        <div class="metal-price-grid"><div class="metal-price"><span>Gold · per gram</span><output id="gold-market-price" aria-live="polite">Loading price…</output></div><div class="metal-price"><span>Silver · per gram</span><output id="silver-market-price" aria-live="polite">Loading price…</output></div></div>
+        <p class="metal-price-status" id="metal-price-status" role="status">Fetching latest spot prices…</p><p class="metal-price-source">Spot price data by <a href="https://gold-api.com/" target="_blank" rel="noopener noreferrer">Gold API</a>. Prices are per gram; local dealer prices may vary.</p>
+      </div>
     </section>
 
     <section class="checker" aria-labelledby="checker-title">
@@ -189,6 +203,36 @@
     const conversionResult = document.querySelector('#conversion-result');
     const rateStatus = document.querySelector('#rate-status');
     let usdRates = null;
+    let metalSpotUSD = null;
+    const metalPriceCurrency = document.querySelector('#metal-price-currency');
+    const metalPriceStatus = document.querySelector('#metal-price-status');
+    function renderMetalPrices() {
+      if (!metalSpotUSD || !Number.isFinite(metalSpotUSD.gold) || !Number.isFinite(metalSpotUSD.silver) || !usdRates) return;
+      const code = metalPriceCurrency.value;
+      const currencyRate = usdRates[code];
+      if (!currencyRate) return;
+      const formatter = new Intl.NumberFormat(undefined, { style:'currency', currency:code, maximumFractionDigits:2 });
+      const gramsPerTroyOunce = 31.1034768;
+      document.querySelector('#gold-market-price').textContent = `${formatter.format(metalSpotUSD.gold / gramsPerTroyOunce * currencyRate)} / g`;
+      document.querySelector('#silver-market-price').textContent = `${formatter.format(metalSpotUSD.silver / gramsPerTroyOunce * currencyRate)} / g`;
+      const quoteTime = [metalSpotUSD.goldUpdated, metalSpotUSD.silverUpdated].filter(Boolean).sort().at(-1);
+      metalPriceStatus.textContent = quoteTime ? `Spot quotes updated ${new Date(quoteTime).toLocaleString()}. Dealer premiums and local rates may differ.` : 'Spot prices shown; dealer premiums and local rates may differ.';
+    }
+    metalPriceCurrency.addEventListener('change', renderMetalPrices);
+    fetch('https://api.gold-api.com/price/XAU').then(response => { if (!response.ok) throw new Error('Gold quote unavailable'); return response.json(); }).then(data => {
+      if (!Number.isFinite(Number(data.price))) throw new Error('Invalid gold quote');
+      metalSpotUSD = metalSpotUSD || {};
+      metalSpotUSD.gold = Number(data.price);
+      metalSpotUSD.goldUpdated = data.updatedAt || new Date().toISOString();
+      renderMetalPrices();
+    }).catch(() => { document.querySelector('#gold-market-price').textContent = 'Price unavailable'; metalPriceStatus.textContent = 'Unable to load one or more live metal prices. Refresh to try again.'; });
+    fetch('https://api.gold-api.com/price/XAG').then(response => { if (!response.ok) throw new Error('Silver quote unavailable'); return response.json(); }).then(data => {
+      if (!Number.isFinite(Number(data.price))) throw new Error('Invalid silver quote');
+      metalSpotUSD = metalSpotUSD || {};
+      metalSpotUSD.silver = Number(data.price);
+      metalSpotUSD.silverUpdated = data.updatedAt || new Date().toISOString();
+      renderMetalPrices();
+    }).catch(() => { document.querySelector('#silver-market-price').textContent = 'Price unavailable'; metalPriceStatus.textContent = 'Unable to load one or more live metal prices. Refresh to try again.'; });
     for (const [code, name] of Object.entries(currencyNames)) {
       fromField.add(new Option(`${code} · ${name}`, code));
       toField.add(new Option(`${code} · ${name}`, code));
@@ -222,12 +266,14 @@
       .then(data => {
         if (data.result !== 'success' || !data.rates || !Object.keys(currencyNames).every(code => data.rates[code])) throw new Error('Rates unavailable');
         usdRates = data.rates;
+        renderMetalPrices();
         const updated = data.time_last_update_utc ? new Date(data.time_last_update_utc).toLocaleString() : 'recently';
         rateStatus.textContent = `Rates updated ${updated}. Reference rates may differ from your bank or provider.`;
         convertCurrency();
       })
       .catch(() => {
         rateStatus.textContent = 'Live rates could not be loaded. Check your connection and refresh to try again.';
+        metalPriceStatus.textContent = 'Currency conversion rates unavailable; prices cannot be shown in the selected currency.';
         conversionResult.textContent = 'Rates unavailable';
       });
 
